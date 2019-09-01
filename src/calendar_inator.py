@@ -95,14 +95,14 @@ def putEventsInDB(ourCalendars):
 def startGui():
     global app
     global headerText, eventText
-    app = App(title = "Calendar-inator", layout = "grid", width = 1050, height = 150)
+    app = App(title = "Calendar-inator", layout = "grid", width = 1400, height = 200)
     dayBox = []
     headerText = []
     eventText = []
     for x in range(0,7):
-        dayBox.append(Box(app, grid=[x, 0], border=True, width=150, height=150))
-        headerText.append(Text(dayBox[x], size=12))
-        eventText.append(Text(dayBox[x], size=10))
+        dayBox.append(Box(app, grid=[x, 0], border=True, width=200, height=200))
+        headerText.append(Text(dayBox[x], size=16))
+        eventText.append(Text(dayBox[x], size=12))
         
 def populateCalendar():
     now = datetime.datetime.now()
@@ -118,7 +118,14 @@ def populateCalendar():
         sqlQuery = "SELECT DISTINCT start, end, event FROM calendar WHERE start BETWEEN '"+nowDB
         sqlQuery += "' and '"+tonightDB+"' ORDER BY start;"
         for row in c.execute(sqlQuery):
-            displayText[x] = displayText[x]+row[2]+"\n"
+            if row[0].find("T")>0:
+                thisString = row[0]
+                thisString = thisString[0:-6] 
+                tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%S")
+                timeOutput = datetime.datetime.strftime(tempDateTime," %I:%M%p ").replace(' 0',' ')
+            else:
+                timeOutput = ""
+            displayText[x] = displayText[x]+ timeOutput +row[2]+"\n"
     for x in range(0,7):
         eventText[x].value = displayText[x]
 
