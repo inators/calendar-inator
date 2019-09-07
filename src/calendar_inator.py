@@ -1,4 +1,3 @@
-from __future__ import print_function
 import pickle
 import os.path
 import datetime
@@ -26,9 +25,15 @@ def main():
     putEventsInDB(ourCalendars)
     populateCalendar()
 
-    app.repeat((60*60*1000),populateCalendar) # every hour   
+    app.repeat((60*60*1000),refreshCalendar) # every hour   
     app.display()
     
+def refreshCalendar():
+    global c
+    c.execute("DELETE FROM calendar")  #clear the memory so we start fresh
+    ourCalendars = getCalendars()
+    putEventsInDB(ourCalendars)
+    populateCalendar()
 
 
     
