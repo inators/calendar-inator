@@ -1,12 +1,14 @@
 import pickle
 import os.path
 import datetime
+from time import gmtime, strftime, time
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from guizero import App, Box, Text
 from pprint import pprint
 import sqlite3
+import textwrap
 
 conn = sqlite3.connect(':memory:')
 c = conn.cursor()
@@ -90,6 +92,23 @@ def putEventsInDB(ourCalendars):
 
 
         for event in events:
+            
+            if 'dateTime' in event['start']:
+                thisString = event['start']['dateTime']
+                if thisString.find("Z") > 0:
+                   tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%SZ")
+                   #Convert it to our time zone
+                   timeStamp = datetime.datetime.timestamp(tempDateTime)
+                   now_timestamp = time()
+                   offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+                   tempDateTime = datetime.datetime.fromtimestamp(timeStamp)
+                   tempDateTime = tempDateTime + offset
+                   event['start']['dateTime'] = datetime.datetime.strftime(tempDateTime,"%Y-%m-%dT%H:%M:%S")           
+
+
+            
+            
+            
             c.execute("INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
                 (event['start'].get('dateTime', event['start'].get('date')),
                 event['end'].get('dateTime', event['end'].get('date')),
@@ -125,12 +144,19 @@ def populateCalendar():
         for row in c.execute(sqlQuery):
             if row[0].find("T")>0:
                 thisString = row[0]
-                thisString = thisString[0:-6] 
+
+                if thisString.count('-') == 3:
+                    thisString = thisString[0:-6]
+
                 tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%S")
                 timeOutput = datetime.datetime.strftime(tempDateTime," %I:%M%p ").replace(' 0',' ')
             else:
                 timeOutput = ""
-            displayText[x] = displayText[x]+ timeOutput +row[2]+"\n"
+            printString = row[2]
+            if len(printString) > 20:
+                lines = textwrap.wrap(printString,16)
+                printString = '\n'.join(lines)
+            displayText[x] = displayText[x]+ timeOutput +printString+"\n"
     for x in range(0,7):
         eventText[x].value = displayText[x]
 
