@@ -78,7 +78,7 @@ def getCalendars():
 
 def putEventsInDB(ourCalendars):
     global c, conn, service
-    # Call the Calendar API
+
     now = datetime.datetime.utcnow()
     now = now + datetime.timedelta(days=-1)
     now = now.isoformat() + 'Z' # 'Z' indicates UTC time
@@ -96,14 +96,14 @@ def putEventsInDB(ourCalendars):
             if 'dateTime' in event['start']:
                 thisString = event['start']['dateTime']
                 if thisString.find("Z") > 0:
-                   tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%SZ")
-                   #Convert it to our time zone
-                   timeStamp = datetime.datetime.timestamp(tempDateTime)
-                   now_timestamp = time()
-                   offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
-                   tempDateTime = datetime.datetime.fromtimestamp(timeStamp)
-                   tempDateTime = tempDateTime + offset
-                   event['start']['dateTime'] = datetime.datetime.strftime(tempDateTime,"%Y-%m-%dT%H:%M:%S")           
+                    tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%SZ")
+                    #Convert it to our time zone
+                    timeStamp = datetime.datetime.timestamp(tempDateTime)
+                    now_timestamp = time()
+                    offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+                    tempDateTime = datetime.datetime.fromtimestamp(timeStamp)
+                    tempDateTime = tempDateTime + offset
+                    event['start']['dateTime'] = datetime.datetime.strftime(tempDateTime,"%Y-%m-%dT%H:%M:%S")           
 
 
             
