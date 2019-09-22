@@ -153,7 +153,7 @@ def populateCalendar():
             else:
                 timeOutput = ""
             printString = row[2]
-            if len(printString) > 20:
+            if len(printString) > 16:
                 lines = textwrap.wrap(printString,16)
                 printString = '\n'.join(lines)
             displayText[x] = displayText[x]+ timeOutput +printString+"\n"
