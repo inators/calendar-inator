@@ -32,8 +32,11 @@ def main():
     
 def refreshCalendar():
     global c
+    try:
+        ourCalendars = getCalendars()
+    except: # not a big deal if we don't update this round.  Will try again in an hour.
+        return
     c.execute("DELETE FROM calendar")  #clear the memory so we start fresh
-    ourCalendars = getCalendars()
     putEventsInDB(ourCalendars)
     populateCalendar()
 
