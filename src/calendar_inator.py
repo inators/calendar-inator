@@ -94,7 +94,6 @@ def putEventsInDB(ourCalendars):
                                             orderBy='startTime').execute()
         events = events_result.get('items', [])
 
-
         for event in events:
             
             if 'dateTime' in event['start']:
@@ -109,15 +108,17 @@ def putEventsInDB(ourCalendars):
                     tempDateTime = tempDateTime + offset
                     event['start']['dateTime'] = datetime.datetime.strftime(tempDateTime,"%Y-%m-%dT%H:%M:%S")           
 
-
             
             
             
-            c.execute("INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
-                (event['start'].get('dateTime', event['start'].get('date')),
-                event['end'].get('dateTime', event['end'].get('date')),
-                event['summary']))
-            conn.commit()
+            try:
+                c.execute("INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
+                    (event['start'].get('dateTime', event['start'].get('date')),
+                    event['end'].get('dateTime', event['end'].get('date')),
+                    event['summary']))
+                conn.commit()
+            except:
+                pprint(event)
 
 
 def startGui():
