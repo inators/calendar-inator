@@ -14,7 +14,7 @@ import socket
 import logging
 import requests
 
-logging.basicConfig(level=logging.INFO, filename="~/calendar-inator.log")
+logging.basicConfig(level=logging.INFO, filename="/home/pi/calendar-inator.log")
 
 
 conn = sqlite3.connect(":memory:")
