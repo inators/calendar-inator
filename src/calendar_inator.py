@@ -202,7 +202,7 @@ def wait_for_internet_connection(interval=5):
 
 
 if __name__ == '__main__':
-    sleep(1)
+    sleep(5)
     try:
         wait_for_internet_connection()
         main()
