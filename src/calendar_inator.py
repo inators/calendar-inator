@@ -12,44 +12,47 @@ import sqlite3
 import textwrap
 import socket
 import logging
+import requests
+
+logging.basicConfig(level=logging.INFO, filename="calendar-inator.log")
 
 
-logging.basicConfig(level=logging.INFO, filename='mylog.log')
-
-
-conn = sqlite3.connect(':memory:')
+conn = sqlite3.connect(":memory:")
 c = conn.cursor()
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+
 
 def main():
     global c, conn, SCOPES
     global app
 
-    c.execute('CREATE TABLE calendar (id INTEGER PRIMARY KEY, start TEXT, end TEXT, event TEXT)')
-    
+    c.execute(
+        "CREATE TABLE calendar (id INTEGER PRIMARY KEY, start TEXT, end TEXT, event TEXT)"
+    )
+
     startGui()
     startGoogleService()
     ourCalendars = getCalendars()
     putEventsInDB(ourCalendars)
     populateCalendar()
 
-    app.repeat((60*60*1000),refreshCalendar) # every hour   
+    app.repeat((60 * 60 * 1000), refreshCalendar)  # every hour
     app.display()
-    
+
+
 def refreshCalendar():
     global c
     try:
         ourCalendars = getCalendars()
-    except: # not a big deal if we don't update this round.  Will try again in an hour.
+    except:  # not a big deal if we don't update this round.  Will try again in an hour.
         print("Calendar failure")
         return
-    c.execute("DELETE FROM calendar")  #clear the memory so we start fresh
+    c.execute("DELETE FROM calendar")  # clear the memory so we start fresh
     putEventsInDB(ourCalendars)
     populateCalendar()
 
 
-    
 def startGoogleService():
     global service
     # This is straight out of the Google sample project to get things connected
@@ -57,72 +60,85 @@ def startGoogleService():
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
             creds = pickle.load(token)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
+        with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
 
-    service = build('calendar', 'v3', credentials=creds)
-     
-    
-    
-def getCalendars(): 
-    global service    
+    service = build("calendar", "v3", credentials=creds)
+
+
+def getCalendars():
+    global service
     calendars_result = service.calendarList().list().execute()
 
-    calendars = calendars_result.get('items', [])
-   
+    calendars = calendars_result.get("items", [])
+
     ourCalendars = []
     for calendar in calendars:
-            ourCalendars.append(calendar['id'])
+        ourCalendars.append(calendar["id"])
     return ourCalendars
+
 
 def putEventsInDB(ourCalendars):
     global c, conn, service
 
     now = datetime.datetime.utcnow()
     now = now + datetime.timedelta(days=-1)
-    now = now.isoformat() + 'Z' # 'Z' indicates UTC time
+    now = now.isoformat() + "Z"  # 'Z' indicates UTC time
 
-    
     for id in ourCalendars:
-        events_result = service.events().list(calendarId=id, timeMin=now,
-                                            maxResults=30, singleEvents=True,
-                                            orderBy='startTime').execute()
-        events = events_result.get('items', [])
+        events_result = (
+            service.events()
+            .list(
+                calendarId=id,
+                timeMin=now,
+                maxResults=30,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        events = events_result.get("items", [])
 
         for event in events:
-            
-            if 'dateTime' in event['start']:
-                thisString = event['start']['dateTime']
+
+            if "dateTime" in event["start"]:
+                thisString = event["start"]["dateTime"]
                 if thisString.find("Z") > 0:
-                    tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%SZ")
-                    #Convert it to our time zone
+                    tempDateTime = datetime.datetime.strptime(
+                        thisString, "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    # Convert it to our time zone
                     timeStamp = datetime.datetime.timestamp(tempDateTime)
                     now_timestamp = time()
-                    offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+                    offset = datetime.datetime.fromtimestamp(
+                        now_timestamp
+                    ) - datetime.datetime.utcfromtimestamp(now_timestamp)
                     tempDateTime = datetime.datetime.fromtimestamp(timeStamp)
                     tempDateTime = tempDateTime + offset
-                    event['start']['dateTime'] = datetime.datetime.strftime(tempDateTime,"%Y-%m-%dT%H:%M:%S")           
+                    event["start"]["dateTime"] = datetime.datetime.strftime(
+                        tempDateTime, "%Y-%m-%dT%H:%M:%S"
+                    )
 
-            
-            
-            
             try:
-                c.execute("INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
-                    (event['start'].get('dateTime', event['start'].get('date')),
-                    event['end'].get('dateTime', event['end'].get('date')),
-                    event['summary']))
+                c.execute(
+                    "INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
+                    (
+                        event["start"].get("dateTime", event["start"].get("date")),
+                        event["end"].get("dateTime", event["end"].get("date")),
+                        event["summary"],
+                    ),
+                )
                 conn.commit()
             except:
                 pprint(event)
@@ -131,80 +147,72 @@ def putEventsInDB(ourCalendars):
 def startGui():
     global app
     global headerText, eventText
-    app = App(title = "Calendar-inator", layout = "grid", width = 1400, height = 200)
+    app = App(title="Calendar-inator", layout="grid", width=1400, height=200)
     dayBox = []
     headerText = []
     eventText = []
-    for x in range(0,7):
+    for x in range(0, 7):
         dayBox.append(Box(app, grid=[x, 0], border=True, width=200, height=200))
         headerText.append(Text(dayBox[x], size=16))
         eventText.append(Text(dayBox[x], size=12))
-        
+
+
 def populateCalendar():
     now = datetime.datetime.now()
-    print(now.strftime("%Y-%m-%d %H:%M:%S")+" populateCalendar")
+    print(now.strftime("%Y-%m-%d %H:%M:%S") + " populateCalendar")
     now = datetime.date.today()
     global headerText, eventText, c
-    displayText = ["","","","","","",""]
-    for x in range(0,7):
+    displayText = ["", "", "", "", "", "", ""]
+    for x in range(0, 7):
         dow = now + datetime.timedelta(days=x)
         nowDB = dow.strftime("%Y-%m-%d")
         tonightDB = dow.strftime("%Y-%m-%dT23:59:59")
         headerText[x].value = dow.strftime("%A")
-        sqlQuery = "SELECT DISTINCT start, end, event FROM calendar WHERE start BETWEEN '"+nowDB
-        sqlQuery += "' and '"+tonightDB+"' ORDER BY start;"
+        sqlQuery = (
+            "SELECT DISTINCT start, end, event FROM calendar WHERE start BETWEEN '"
+            + nowDB
+        )
+        sqlQuery += "' and '" + tonightDB + "' ORDER BY start;"
         for row in c.execute(sqlQuery):
-            if row[0].find("T")>0:
+            if row[0].find("T") > 0:
                 thisString = row[0]
 
-                if thisString.count('-') == 3:
+                if thisString.count("-") == 3:
                     thisString = thisString[0:-6]
 
-                tempDateTime = datetime.datetime.strptime(thisString,"%Y-%m-%dT%H:%M:%S")
-                timeOutput = datetime.datetime.strftime(tempDateTime," %I:%M%p ").replace(' 0',' ')
+                tempDateTime = datetime.datetime.strptime(
+                    thisString, "%Y-%m-%dT%H:%M:%S"
+                )
+                timeOutput = datetime.datetime.strftime(
+                    tempDateTime, " %I:%M%p "
+                ).replace(" 0", " ")
             else:
                 timeOutput = ""
             printString = row[2]
             if len(printString) > 16:
-                lines = textwrap.wrap(printString,16)
-                printString = '\n'.join(lines)
-            displayText[x] = displayText[x]+ timeOutput +printString+"\n"
-    for x in range(0,7):
+                lines = textwrap.wrap(printString, 16)
+                printString = "\n".join(lines)
+            displayText[x] = displayText[x] + timeOutput + printString + "\n"
+    for x in range(0, 7):
         eventText[x].value = displayText[x]
 
-def check_internet_connection(host="8.8.8.8", port=53, timeout=3):
-    """
-    Check for internet connectivity by trying to establish a socket connection.
-    :param host: Host to connect to (default is Google's public DNS server).
-    :param port: Port to connect to (default is 53, the DNS service port).
-    :param timeout: Connection timeout in seconds.
-    :return: True if the connection is successful, False otherwise.
-    """
+
+def has_internet():
     try:
-        socket.setdefaulttimeout(timeout)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-        sock.close()
+        requests.get("https://www.google.com", timeout=5)
+        logging.info("internet connection obtained!")
         return True
-    except socket.error:
+    except requests.ConnectionError:
+        logging.info("No internet connection yet.")
         return False
 
-def wait_for_internet_connection(interval=5):
-    """
-    Wait for an internet connection, checking periodically.
-    :param interval: Time in seconds between checks.
-    """
-    print("Checking for internet connection...")
-    while not check_internet_connection():
-        print("No internet connection available. Waiting...")
-        time.sleep(interval)
-    print("Internet connection established.")
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     sleep(5)
     try:
-        wait_for_internet_connection()
+        while not has_internet():
+            print("Waiting for internet...")
+            time.sleep(5)
         main()
     except Exception as e:
         logging.exception("Something happened")
