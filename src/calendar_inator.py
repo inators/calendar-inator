@@ -13,6 +13,10 @@ import textwrap
 import socket
 import logging
 
+logger = logging.getLogger("mylogger")
+logger.basicConfig(level=logging.INFO, filename='mylog.log', encoding='utf-8')
+
+
 conn = sqlite3.connect(':memory:')
 c = conn.cursor()
 # If modifying these scopes, delete the file token.pickle.
@@ -198,11 +202,9 @@ def wait_for_internet_connection(interval=5):
 
 
 if __name__ == '__main__':
-    
     time.sleep(10)
     try:
         wait_for_internet_connection()
         main()
     except Exception as e:
-
-        logging.exception("")
+        logging.exception("Something happened")
