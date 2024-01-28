@@ -148,7 +148,7 @@ def startGui():
     global app
     global headerText, eventText
     app = App(title="Calendar-inator", layout="grid", width=1400, height=200)
-    app.tk.geometry('%dx%d+%d+%d' % (1400, 200, 100, 850))
+    app.tk.geometry('%dx%d+%d+%d' % (1400, 200, 0, 850))
     
     dayBox = []
     headerText = []
