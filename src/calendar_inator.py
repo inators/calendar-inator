@@ -12,9 +12,15 @@ import sqlite3
 import textwrap
 import socket
 import logging
+import sys
 import requests
 
-logging.basicConfig(level=logging.INFO, filename="/home/pi/calendar-inator.log")
+logger = logging.getLogger("calendar-inator")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s',
+                     filename="/home/pi/mylogs.log")
+logger.info("Program start.")
+sys.stderr.write = logger.error
+sys.stdout.write = logger.info
 
 
 conn = sqlite3.connect(":memory:")
