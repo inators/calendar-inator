@@ -15,15 +15,16 @@ import requests
 import logging
 import sys
 import os
+from colors import Colors
 
-filename = os.path.basename("__file__")
-logger = logging.getLogger("calendar-inator")
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s',
+filename = os.path.basename(__file__)
+logger = logging.getLogger(f"{Colors.RED}{filename}{Colors.END}")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(message)s',
                      filename="/home/pi/mylogs.log")
 logger.info("Program start.")
 sys.stderr.write = logger.error
 sys.stdout.write = logger.info
-
+logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 
 conn = sqlite3.connect(":memory:")
 c = conn.cursor()
@@ -205,7 +206,7 @@ def populateCalendar():
             displayText[x] = displayText[x] + timeOutput + printString + "\n"
     for x in range(0, 7):
         eventText[x].value = displayText[x]
-
+    app.update()
 
 def has_internet():
     try:
