@@ -3,3 +3,4 @@
 credentials.json
 token.pickle
 mylog.log
+__pycache__
