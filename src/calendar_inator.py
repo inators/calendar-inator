@@ -18,10 +18,11 @@ import os
 from colors import Colors
 
 filename = os.path.basename(__file__)
-home = os.path.expanduser("~")
+homefolder = os.path.expanduser("~")
+credfolder = homefolder + "/creds"
 logger = logging.getLogger(f"{Colors.RED}{filename}{Colors.END}")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(message)s',
-                     filename=home + "/mylogs.log")
+                     filename=homefolder + "/mylogs.log")
 logger.info("Program start.")
 sys.stderr.write = logger.error
 sys.stdout.write = logger.info
@@ -78,10 +79,10 @@ def startGoogleService():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(f"{home}/calendarinatorCreds.json", SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(f"{credfolder}/calendarinatorCreds.json", SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open("token.pickle", "wb") as token:
+        with open(f"{credfolder}/calendarinatortoken.pickle", "wb") as token:
             pickle.dump(creds, token)
 
     service = build("calendar", "v3", credentials=creds)
