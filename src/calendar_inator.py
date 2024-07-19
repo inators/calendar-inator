@@ -103,7 +103,7 @@ def getCalendars():
 def putEventsInDB(ourCalendars):
     global c, conn, service
 
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now()
     now = now + datetime.timedelta(days=-1)
     now = now.isoformat() + "Z"  # 'Z' indicates UTC time
 
