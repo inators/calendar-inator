@@ -1,4 +1,16 @@
-#!/usr/bin/python3
+#!/home/david/Code/calendar-inator/.venv/bin/python
+'''
+Project: /home/david/Code/calendar-inator/src
+Created Date: 2025-01-02 05:33:55 PM
+Author: David Whipple
+-----
+Last Modified: 2025-01-02 07:41:20 PM
+Modified By: David Whipple
+'''
+
+
+
+
 import pickle
 import os.path
 import datetime
@@ -6,7 +18,6 @@ from time import gmtime, strftime, time, sleep
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from guizero import App, Box, Text
 from pprint import pprint
 import sqlite3
 import textwrap
@@ -17,15 +28,18 @@ import sys
 import os
 from colors import Colors
 
+headerText = []
+
 filename = os.path.basename(__file__)
 homefolder = os.path.expanduser("~")
 credfolder = homefolder + "/creds"
 logger = logging.getLogger(f"{Colors.RED}{filename}{Colors.END}")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(message)s',
                      filename=homefolder + "/mylogs.log")
+
 logger.info("Program start.")
-sys.stderr.write = logger.error
-sys.stdout.write = logger.info
+#sys.stderr.write = logger.error
+#sys.stdout.write = logger.info
 logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 
 conn = sqlite3.connect(":memory:")
@@ -39,17 +53,14 @@ def main():
     global app
 
     c.execute(
-        "CREATE TABLE calendar (id INTEGER PRIMARY KEY, start TEXT, end TEXT, event TEXT)"
+        "CREATE TABLE calendar (id INTEGER PRIMARY KEY, start TEXT, end TEXT, event TEXT, email TEXT, name TEXT)"
     )
 
-    startGui()
     startGoogleService()
     ourCalendars = getCalendars()
     putEventsInDB(ourCalendars)
     populateCalendar()
 
-    app.repeat((60 * 60 * 1000), refreshCalendar)  # every hour
-    app.display()
 
 
 def refreshCalendar():
@@ -85,7 +96,7 @@ def startGoogleService():
         with open(f"{credfolder}/calendarinatortoken.pickle", "wb") as token:
             pickle.dump(creds, token)
 
-    service = build("calendar", "v3", credentials=creds)
+    service = build("calendar", "v3", credentials=creds,cache_discovery=False)
 
 
 def getCalendars():
@@ -121,9 +132,11 @@ def putEventsInDB(ourCalendars):
         )
         events = events_result.get("items", [])
 
-        for event in events:
 
+        for event in events:
+            
             if "dateTime" in event["start"]:
+                
                 thisString = event["start"]["dateTime"]
                 if thisString.find("Z") > 0:
                     tempDateTime = datetime.datetime.strptime(
@@ -141,13 +154,17 @@ def putEventsInDB(ourCalendars):
                         tempDateTime, "%Y-%m-%dT%H:%M:%S"
                     )
 
+
             try:
+                
                 c.execute(
-                    "INSERT INTO calendar (start, end, event) VALUES (?,?,?)",
+                    "INSERT INTO calendar (start, end, event, email, name) VALUES (?,?,?,?,?)",
                     (
                         event["start"].get("dateTime", event["start"].get("date")),
                         event["end"].get("dateTime", event["end"].get("date")),
                         event["summary"],
+                        event["organizer"].get("email",""),
+                        event["organizer"].get("displayName",""),
                     ),
                 )
                 conn.commit()
@@ -155,37 +172,21 @@ def putEventsInDB(ourCalendars):
                 pprint(event)
 
 
-def startGui():
-    global app
-    global headerText, eventText
-    app = App(title="Calendar-inator", layout="grid", width=1400, height=200)
-    app.tk.geometry('%dx%d+%d+%d' % (1400, 200, 0, 850))
-    
-    dayBox = []
-    headerText = []
-    eventText = []
-    for x in range(0, 7):
-        dayBox.append(Box(app, grid=[x, 0], border=True, width=200, height=200))
-        headerText.append(Text(dayBox[x], size=16))
-        eventText.append(Text(dayBox[x], size=12))
-
 
 def populateCalendar():
     now = datetime.datetime.now()
     print(now.strftime("%Y-%m-%d %H:%M:%S") + " populateCalendar")
     now = datetime.date.today()
     global headerText, eventText, c
-    displayText = ["", "", "", "", "", "", ""]
-    for x in range(0, 7):
+    displayText = []
+    for x in range(0, 90):
+        output = ""
         dow = now + datetime.timedelta(days=x)
         nowDB = dow.strftime("%Y-%m-%d")
         tonightDB = dow.strftime("%Y-%m-%dT23:59:59")
-        headerText[x].value = dow.strftime("%A")
+        headerText.append(dow.strftime("%A"))
         sqlQuery = (
-            "SELECT DISTINCT start, end, event FROM calendar WHERE start BETWEEN '"
-            + nowDB
-        )
-        sqlQuery += "' and '" + tonightDB + "' ORDER BY start;"
+            f"SELECT DISTINCT start, end, event FROM calendar WHERE start BETWEEN '{nowDB}' and '{tonightDB}' ORDER BY start;" )
         for row in c.execute(sqlQuery):
             if row[0].find("T") > 0:
                 thisString = row[0]
@@ -202,13 +203,14 @@ def populateCalendar():
             else:
                 timeOutput = ""
             printString = row[2]
-            if len(printString) > 16:
-                lines = textwrap.wrap(printString, 16)
+            if len(printString) > 32:
+                lines = textwrap.wrap(printString, 32)
                 printString = "\n".join(lines)
-            displayText[x] = displayText[x] + timeOutput + printString + "\n"
-    for x in range(0, 7):
-        eventText[x].value = displayText[x]
-    app.update()
+            output = output + timeOutput + printString + "\n"
+        displayText.append(output) 
+    
+        print(f"{headerText[x]} - {displayText[x]}")
+
 
 def has_internet():
     try:

@@ -1,7 +1,10 @@
-/nbproject/private/
-/nbproject/
 credentials.json
 token.pickle
-mylog.log
-__pycache__
-.venv
+timestamp*
+.micropico
+.vscode/*
+certs/*
+webrepl_cfg.py
+__pycache__/
+*workspace
+bootconfig.py
